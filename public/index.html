@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>지갑 주소 연동</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
+</head>
+<body>
+    <h2>지갑 주소를 계정에 연동</h2>
+    <button onclick="linkWallet()">연동하기</button>
+    <p id="status"></p>
+
+    <script>
+        const userId = "user";
+
+        window.onload = function () {
+            if (!window.ethereum) {
+                alert("No MetaMask.");
+                return;
+            }
+        }
+
+        async function linkWallet() {
+            const web3 = new Web3(window.ethereum);
+
+            await window.ethereum.request({ method: "eth_requestAccounts" });
+
+            const accounts = await web3.eth.getAccounts();
+            const address = accounts[0];
+
+            const nonceRes = await fetch("http://localhost:3000/api/nonce", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId })
+            });
+            const { nonce } = await nonceRes.json();
+
+            const signature = await web3.eth.personal.sign(nonce, address, "");
+            
+            const linkRes = await fetch("http://localhost:3000/api/link-wallet", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId, address, signature })
+            });
+            const result = await linkRes.json();
+
+            document.getElementById("status").innerText =
+                result.success ? "Success" : "Fail";
+        }
+    </script>
+</body>
+</html>
